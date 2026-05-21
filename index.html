@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flappy Bird</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: 'Nunito', 'Segoe UI', sans-serif;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(72, 149, 239, 0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 50%, rgba(236, 110, 173, 0.1) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .game-wrapper {
+    position: relative;
+    border-radius: 20px;
+    box-shadow:
+      0 0 60px rgba(0, 0, 0, 0.6),
+      0 0 120px rgba(72, 149, 239, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px;
+    backdrop-filter: blur(4px);
+  }
+
+  .game-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05), rgba(255,255,255,0.15));
+    z-index: -1;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    padding: 1px;
+  }
+
+  canvas {
+    display: block;
+    border-radius: 14px;
+    background: #70c5ce;
+  }
+
+  #score {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
+    padding: 8px 28px;
+    border-radius: 30px;
+    font-size: 42px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.15);
+    pointer-events: none;
+    z-index: 10;
+    min-width: 60px;
+    text-align: center;
+  }
+
+  #bestScore {
+    position: absolute;
+    top: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(6px);
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 15px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.8);
+    border: 1px solid rgba(255,255,255,0.08);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  #gameOver {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    border-radius: 14px;
+    z-index: 20;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  #gameOver h1 {
+    font-size: 52px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 4px;
+    text-shadow: none;
+    letter-spacing: 1px;
+  }
+
+  #gameOver .subtitle {
+    color: rgba(255,255,255,0.5);
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 20px;
+  }
+
+  #gameOver .score-display {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 16px 40px;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+
+  #gameOver .score-display p {
+    color: rgba(255,255,255,0.5);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+
+  #gameOver .score-display span {
+    color: white;
+    font-size: 48px;
+    font-weight: 900;
+  }
+
+  #gameOver .score-display .new-best {
+    font-size: 14px;
+    color: #f39c12;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-top: 4px;
+    display: none;
+  }
+
+  #gameOver button {
+    padding: 14px 44px;
+    font-size: 18px;
+    font-weight: 800;
+    font-family: inherit;
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(243, 156, 18, 0.3);
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 0.5px;
+  }
+
+  #gameOver button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 28px rgba(243, 156, 18, 0.4);
+  }
+
+  #gameOver button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 12px rgba(243, 156, 18, 0.3);
+  }
+
+  #gameOver .hint {
+    color: rgba(255,255,255,0.3);
+    font-size: 12px;
+    margin-top: 14px;
+    letter-spacing: 1px;
+  }
+
+  #startMsg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  #startMsg .title {
+    font-size: 36px;
+    font-weight: 900;
+    color: white;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  #startMsg .sub {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+</style>
+</head>
+<body>
+
+<div class="game-wrapper">
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <div id="score">0</div>
+  <div id="bestScore">🏆 RECORD: <span id="bestScoreValue">0</span></div>
+  <div id="startMsg">
+    <div class="title">Flappy Bird</div>
+    <div class="sub">Нажми Пробел или кликни</div>
+  </div>
+  <div id="gameOver">
+    <h1>Game Over</h1>
+    <div class="subtitle">— Игра окончена —</div>
+    <div class="score-display">
+      <p>Счёт</p>
+      <span id="finalScore">0</span>
+      <div class="new-best" id="newBestLabel">★ Новый рекорд! ★</div>
+    </div>
+    <button id="restartBtn">Играть снова</button>
+    <div class="hint">или нажми Пробел</div>
+  </div>
+</div>
+
+<script src="flappy.js"></script>
+</body>
+</html>
